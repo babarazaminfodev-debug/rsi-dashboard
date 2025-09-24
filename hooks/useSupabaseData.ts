@@ -60,6 +60,7 @@ export const useSupabaseData = () => {
 
     try {
       if (!supabase) {
+      }
 
       const { error } = await supabase
         .from('paper_trades')
