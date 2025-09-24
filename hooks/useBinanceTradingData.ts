@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { calculateRSI } from '../utils/rsi';
 import { Alert } from '../types';
+import { sendTelegramMessage } from '../utils/telegram';
 
 const SYMBOLS = [
   'BTCUSDT', 'XRPUSDT', 'AVAXUSDT', 'DOTUSDT', 'BNBUSDT', 
@@ -10,7 +11,13 @@ const RSI_PERIOD = 14;
 const OVERSOLD_THRESHOLD = 30;
 const OVERBOUGHT_THRESHOLD = 70;
 const PRICE_HISTORY_LIMIT = 100;
-const ALERT_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+const ALERT_COOLDOWN = 5 * 60 * 1000; // 5 minutes for UI alerts
+
+// Telegram specific thresholds
+const RSI_WARNING_THRESHOLD = 30;
+const RSI_BUY_THRESHOLD = 25;
+const RSI_RESET_THRESHOLD = 40;
+
 
 export interface MarketData {
   symbol: string;
@@ -25,11 +32,13 @@ export const useBinanceTradingData = (timeframe: string) => {
   
   const priceHistories = useRef<Map<string, number[]>>(new Map());
   const lastAlertTimestamps = useRef<Map<string, number>>(new Map());
+  const telegramAlertState = useRef<Map<string, 'warned' | 'triggered'>>(new Map());
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     setLoading(true);
     priceHistories.current.clear();
+    telegramAlertState.current.clear();
     setMarketData(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
 
     if (ws.current) {
@@ -109,6 +118,26 @@ export const useBinanceTradingData = (timeframe: string) => {
               setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price: closePrice, rsi } : item));
 
               if (rsi !== null) {
+                // --- Telegram Alert Logic ---
+                const currentTelegramState = telegramAlertState.current.get(symbol);
+
+                if (rsi <= RSI_BUY_THRESHOLD && currentTelegramState === 'warned') {
+                    const entryPrice = closePrice;
+                    const tp = entryPrice * 1.02;
+                    const sl = entryPrice * 0.99;
+                    const message = `🟢 *BUY SIGNAL* 🟢\n\n*Symbol:* ${symbol}\n*Entry Price:* ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}\n*TP:* ${tp.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (+2%)\n*SL:* ${sl.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (-1%)`;
+                    sendTelegramMessage(message);
+                    telegramAlertState.current.set(symbol, 'triggered');
+                } else if (rsi <= RSI_WARNING_THRESHOLD && !currentTelegramState) {
+                    const message = `⚠️ *RSI WARNING* ⚠️\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString()}\n*RSI:* ${rsi.toFixed(2)}`;
+                    sendTelegramMessage(message);
+                    telegramAlertState.current.set(symbol, 'warned');
+                } else if (rsi > RSI_RESET_THRESHOLD && currentTelegramState) {
+                    telegramAlertState.current.delete(symbol);
+                }
+
+
+                // --- UI Alert Logic ---
                 const now = Date.now();
                 const alertKey = `${symbol}-${rsi <= OVERSOLD_THRESHOLD ? 'oversold' : 'overbought'}`;
                 const lastAlertTime = lastAlertTimestamps.current.get(alertKey) || 0;
@@ -146,7 +175,6 @@ export const useBinanceTradingData = (timeframe: string) => {
 
       newWs.onclose = () => {
         console.log('Binance WebSocket disconnected. Attempting to reconnect...');
-        // Simple reconnect logic, could be improved with backoff strategy
         if (ws.current && ws.current.readyState === WebSocket.CLOSED) {
             setTimeout(connectWebSocket, 5000);
         }
