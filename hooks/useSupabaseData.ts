@@ -9,6 +9,14 @@ export const useSupabaseData = () => {
     // Check if Supabase is properly configured
     const checkConnection = async () => {
       try {
+        if (!supabase) {
+          setIsConnected(false);
+          return;
+        }
+        if (!supabase) {
+          setIsConnected(false);
+          return;
+        }
         const { data, error } = await supabase.from('rsi_alerts').select('count').limit(1);
         if (!error) {
           setIsConnected(true);
@@ -30,7 +38,7 @@ export const useSupabaseData = () => {
         console.warn('Supabase not configured. Alert not saved.');
         return null;
       }
-      
+
       const { data, error } = await supabase
         .from('rsi_alerts')
         .insert({
@@ -59,6 +67,16 @@ export const useSupabaseData = () => {
     if (!isConnected) return false;
 
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not saved.');
+        return false;
+      }
+
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not saved.');
+        return false;
+      }
+
       const { error } = await supabase
         .from('paper_trades')
         .insert({
@@ -94,6 +112,16 @@ export const useSupabaseData = () => {
     if (!isConnected) return false;
 
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not updated.');
+        return false;
+      }
+
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not updated.');
+        return false;
+      }
+
       const { error } = await supabase
         .from('paper_trades')
         .update({
@@ -114,29 +142,7 @@ export const useSupabaseData = () => {
     } catch (err) {
       console.error('Error updating trade:', err);
       return false;
-    }
-  };
 
-  const loadTrades = async (): Promise<PaperTrade[]> => {
-    if (!isConnected) return [];
-
-    try {
-      
-      if (!supabase) {
-        console.warn('Supabase not configured. Please set up environment variables.');
-        return;
-      }
-      
-      if (!supabase) {
-        console.warn('Supabase not configured. Trade not saved.');
-        return null;
-      }
-      
-      if (!supabase) {
-        console.warn('Supabase not configured. Trade not updated.');
-        return null;
-      }
-      
       const { data, error } = await supabase
         .from('paper_trades')
         .select('*')
@@ -172,12 +178,10 @@ export const useSupabaseData = () => {
     if (!isConnected) return [];
 
     try {
-      
-      if (!supabase) {
-        console.warn('Supabase not configured. Please set up environment variables.');
-        return;
-      }
-      
+        console.warn('Supabase not configured. Cannot load alerts.');
+        console.warn('Supabase not configured. Cannot load alerts.');
+        return [];
+
       const { data, error } = await supabase
         .from('rsi_alerts')
         .select('*')
