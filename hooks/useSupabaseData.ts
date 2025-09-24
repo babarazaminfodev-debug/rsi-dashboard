@@ -109,19 +109,9 @@ export const useSupabaseData = () => {
   };
 
   const updateTrade = async (trade: PaperTrade): Promise<boolean> => {
-    if (!isConnected) return false;
+    if (!isConnected || !supabase) return false;
 
     try {
-      if (!supabase) {
-        console.warn('Supabase not configured. Trade not updated.');
-        return false;
-      }
-
-      if (!supabase) {
-        console.warn('Supabase not configured. Trade not updated.');
-        return false;
-      }
-
       const { error } = await supabase
         .from('paper_trades')
         .update({
@@ -142,7 +132,13 @@ export const useSupabaseData = () => {
     } catch (err) {
       console.error('Error updating trade:', err);
       return false;
+    }
+  };
 
+  const loadTrades = async (): Promise<PaperTrade[]> => {
+    if (!isConnected || !supabase) return [];
+
+    try {
       const { data, error } = await supabase
         .from('paper_trades')
         .select('*')
@@ -175,13 +171,9 @@ export const useSupabaseData = () => {
   };
 
   const loadAlerts = async (limit: number = 100): Promise<Alert[]> => {
-    if (!isConnected) return [];
+    if (!isConnected || !supabase) return [];
 
     try {
-        console.warn('Supabase not configured. Cannot load alerts.');
-        console.warn('Supabase not configured. Cannot load alerts.');
-        return [];
-
       const { data, error } = await supabase
         .from('rsi_alerts')
         .select('*')
