@@ -37,15 +37,13 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate all numeric inputs
     onLogTrade({
       symbol: alert.symbol,
       side,
-      entryPrice: parsedEntryPrice,
-      tp: parsedTp,
-      sl: parsedSl,
-      qty: parsedQty,
+      entryPrice: parseFloat(entryPrice),
+      tp: parseFloat(tp),
+      sl: parseFloat(sl),
+      qty: parseFloat(qty),
     });
   };
 
@@ -70,22 +68,22 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="entryPrice" className="block text-sm font-medium text-gray-300 mb-1">Entry Price</label>
-              {errors.entryPrice && <p className="text-red-400 text-xs mt-1">{errors.entryPrice}</p>}
+              <input type="number" id="entryPrice" value={entryPrice} onChange={e => setEntryPrice(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
             </div>
             <div>
               <label htmlFor="qty" className="block text-sm font-medium text-gray-300 mb-1">Quantity</label>
-              <input type="number" id="qty" value={qty} onChange={e => setQty(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${errors.qty ? 'border-red-500' : 'border-gray-600'}`} required />
+              <input type="number" id="qty" value={qty} onChange={e => setQty(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="tp" className="block text-sm font-medium text-green-400 mb-1">Take Profit (TP)</label>
-              {errors.tp && <p className="text-red-400 text-xs mt-1">{errors.tp}</p>}
+              <input type="number" id="tp" value={tp} onChange={e => setTp(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500" required />
             </div>
             <div>
               <label htmlFor="sl" className="block text-sm font-medium text-red-400 mb-1">Stop Loss (SL)</label>
-              <input type="number" id="sl" value={sl} onChange={e => setSl(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 ${errors.sl ? 'border-red-500' : 'border-gray-600'}`} required />
+              <input type="number" id="sl" value={sl} onChange={e => setSl(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500" required />
             </div>
           </div>
           

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { calculateRSI } from '../utils/rsi';
 import { Alert } from '../types';
 import { sendTelegramMessage } from '../utils/telegram';
-import { useSupabaseData } from './useSupabaseData';
 
 const SYMBOLS = [
   'BTCUSDT', 'XRPUSDT', 'AVAXUSDT', 'DOTUSDT', 'BNBUSDT', 
@@ -30,7 +29,6 @@ export const useBinanceTradingData = (timeframe: string) => {
   const [marketData, setMarketData] = useState<MarketData[]>(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
-  const { saveAlert } = useSupabaseData();
   
   const priceHistories = useRef<Map<string, number[]>>(new Map());
   const lastAlertTimestamps = useRef<Map<string, number>>(new Map());
@@ -120,26 +118,33 @@ export const useBinanceTradingData = (timeframe: string) => {
               setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price: closePrice, rsi } : item));
 
               if (rsi !== null) {
-                // --- Telegram Alert Logic ---
-                const currentTelegramState = telegramAlertState.current.get(symbol);
+                // --- Refactored Telegram Alert Logic ---
+                const currentState = telegramAlertState.current.get(symbol);
 
-                if (rsi <= RSI_BUY_THRESHOLD && currentTelegramState === 'warned') {
-                    const entryPrice = closePrice;
-                    const tp = entryPrice * 1.02;
-                    const sl = entryPrice * 0.99;
-                    const message = `🟢 *BUY SIGNAL* 🟢\n\n*Symbol:* ${symbol}\n*Entry Price:* ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}\n*TP:* ${tp.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (+2%)\n*SL:* ${sl.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (-1%)`;
-                    sendTelegramMessage(message);
-                    telegramAlertState.current.set(symbol, 'triggered');
-                } else if (rsi <= RSI_WARNING_THRESHOLD && !currentTelegramState) {
-                    const message = `⚠️ *RSI WARNING* ⚠️\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString()}\n*RSI:* ${rsi.toFixed(2)}`;
-                    sendTelegramMessage(message);
-                    telegramAlertState.current.set(symbol, 'warned');
-                } else if (rsi > RSI_RESET_THRESHOLD && currentTelegramState) {
+                // 1. State Reset Logic: If RSI has recovered, reset the alert state for this symbol.
+                if (currentState && rsi > RSI_RESET_THRESHOLD) {
                     telegramAlertState.current.delete(symbol);
+                } 
+                // 2. Alert Trigger Logic: Only check for new alerts if RSI is below the warning threshold.
+                else if (rsi <= RSI_WARNING_THRESHOLD) {
+                    // Send BUY SIGNAL only if the state is currently 'warned' and RSI drops further.
+                    if (rsi <= RSI_BUY_THRESHOLD && currentState === 'warned') {
+                        const entryPrice = closePrice;
+                        const tp = entryPrice * 1.02;
+                        const sl = entryPrice * 0.99;
+                        const message = `🟢 *BUY SIGNAL* 🟢\n\n*Symbol:* ${symbol}\n*Entry Price:* ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}\n*TP:* ${tp.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (+2%)\n*SL:* ${sl.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (-1%)`;
+                        sendTelegramMessage(message);
+                        telegramAlertState.current.set(symbol, 'triggered');
+                    }
+                    // Send WARNING signal only if there is no current state (i.e., it's the first time crossing).
+                    else if (!currentState) {
+                        const message = `⚠️ *RSI WARNING* ⚠️\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString()}\n*RSI:* ${rsi.toFixed(2)}`;
+                        sendTelegramMessage(message);
+                        telegramAlertState.current.set(symbol, 'warned');
+                    }
                 }
 
-
-                // --- UI Alert Logic ---
+                // --- UI Alert Logic (remains unchanged) ---
                 const now = Date.now();
                 const alertKey = `${symbol}-${rsi <= OVERSOLD_THRESHOLD ? 'oversold' : 'overbought'}`;
                 const lastAlertTime = lastAlertTimestamps.current.get(alertKey) || 0;
@@ -163,9 +168,6 @@ export const useBinanceTradingData = (timeframe: string) => {
                       };
                       setAlerts(prev => [newAlert, ...prev].slice(0, 50));
                       lastAlertTimestamps.current.set(alertKey, now);
-                      
-                      // Save alert to Supabase
-                      saveAlert(newAlert, timeframe);
                   }
                 }
               }
