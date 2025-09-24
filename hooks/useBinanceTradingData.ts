@@ -1,0 +1,167 @@
+import { useState, useEffect, useRef } from 'react';
+import { calculateRSI } from '../utils/rsi';
+import { Alert } from '../types';
+
+const SYMBOLS = [
+  'BTCUSDT', 'XRPUSDT', 'AVAXUSDT', 'DOTUSDT', 'BNBUSDT', 
+  'ARBUSDT', 'ETHUSDT', 'SOLUSDT', 'LTCUSDT', 'FETUSDT'
+];
+const RSI_PERIOD = 14;
+const OVERSOLD_THRESHOLD = 30;
+const OVERBOUGHT_THRESHOLD = 70;
+const PRICE_HISTORY_LIMIT = 100;
+const ALERT_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+
+export interface MarketData {
+  symbol: string;
+  price: number;
+  rsi: number | null;
+}
+
+export const useBinanceTradingData = (timeframe: string) => {
+  const [marketData, setMarketData] = useState<MarketData[]>(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const priceHistories = useRef<Map<string, number[]>>(new Map());
+  const lastAlertTimestamps = useRef<Map<string, number>>(new Map());
+  const ws = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    priceHistories.current.clear();
+    setMarketData(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
+
+    if (ws.current) {
+      ws.current.close();
+      ws.current = null;
+    }
+    
+    const fetchInitialData = async () => {
+      await Promise.all(SYMBOLS.map(async (symbol) => {
+        try {
+          const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${timeframe}&limit=${PRICE_HISTORY_LIMIT}`);
+          if (!response.ok) throw new Error(`Failed to fetch klines for ${symbol}`);
+          
+          const klines = await response.json();
+          const closingPrices: number[] = klines.map((k: any) => parseFloat(k[4]));
+          
+          priceHistories.current.set(symbol, closingPrices);
+          
+          const rsi = calculateRSI(closingPrices, RSI_PERIOD);
+          const currentPrice = closingPrices.length > 0 ? closingPrices[closingPrices.length - 1] : 0;
+          
+          setMarketData(prev => prev.map(item => item.symbol === symbol ? { symbol, price: currentPrice, rsi } : item));
+
+        } catch (error) {
+          console.error(error);
+          setMarketData(prev => prev.map(item => item.symbol === symbol ? { symbol, price: 0, rsi: null } : item));
+        }
+      }));
+
+      connectWebSocket();
+    };
+
+    const connectWebSocket = () => {
+      const klineStreams = SYMBOLS.map(s => `${s.toLowerCase()}@kline_${timeframe}`);
+      const tickerStreams = SYMBOLS.map(s => `${s.toLowerCase()}@miniTicker`);
+      const streams = [...klineStreams, ...tickerStreams].join('/');
+      
+      const newWs = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+      ws.current = newWs;
+
+      newWs.onopen = () => {
+        console.log('Binance dual-stream WebSocket connected');
+        setLoading(false);
+      };
+
+      newWs.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        const { stream, data } = message;
+        
+        if (!data) return;
+
+        if (stream.endsWith('@miniTicker')) {
+          const symbol = data.s;
+          const price = parseFloat(data.c);
+
+          setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price } : item));
+
+          const history = priceHistories.current.get(symbol);
+          if (history && history.length > RSI_PERIOD) {
+            const liveHistory = [...history.slice(0, -1), price];
+            const liveRsi = calculateRSI(liveHistory, RSI_PERIOD);
+            setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, rsi: liveRsi } : item));
+          }
+
+        } else if (stream.endsWith(`@kline_${timeframe}`)) {
+          const symbol = data.s;
+          const kline = data.k;
+          const isKlineClosed = kline.x;
+
+          if (isKlineClosed) {
+              const closePrice = parseFloat(kline.c);
+              const history = priceHistories.current.get(symbol) || [];
+              const newHistory = [...history.slice(1), closePrice];
+              priceHistories.current.set(symbol, newHistory);
+
+              const rsi = calculateRSI(newHistory, RSI_PERIOD);
+              setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price: closePrice, rsi } : item));
+
+              if (rsi !== null) {
+                const now = Date.now();
+                const alertKey = `${symbol}-${rsi <= OVERSOLD_THRESHOLD ? 'oversold' : 'overbought'}`;
+                const lastAlertTime = lastAlertTimestamps.current.get(alertKey) || 0;
+                
+                if (now - lastAlertTime > ALERT_COOLDOWN) {
+                  let alertConditionMet = false;
+                  let level = 0;
+                  if (rsi <= OVERSOLD_THRESHOLD) {
+                    alertConditionMet = true;
+                    level = OVERSOLD_THRESHOLD;
+                  } else if (rsi >= OVERBOUGHT_THRESHOLD) {
+                    alertConditionMet = true;
+                    level = OVERBOUGHT_THRESHOLD;
+                  }
+                  
+                  if (alertConditionMet) {
+                      const newAlert: Alert = {
+                          id: `${symbol}-${now}`,
+                          symbol, rsi, price: closePrice, level,
+                          createdAt: new Date(),
+                      };
+                      setAlerts(prev => [newAlert, ...prev].slice(0, 50));
+                      lastAlertTimestamps.current.set(alertKey, now);
+                  }
+                }
+              }
+          }
+        }
+      };
+
+      newWs.onerror = (error) => {
+        console.error('Binance WebSocket error:', error);
+        setLoading(false);
+      };
+
+      newWs.onclose = () => {
+        console.log('Binance WebSocket disconnected. Attempting to reconnect...');
+        // Simple reconnect logic, could be improved with backoff strategy
+        if (ws.current && ws.current.readyState === WebSocket.CLOSED) {
+            setTimeout(connectWebSocket, 5000);
+        }
+      };
+    };
+
+    fetchInitialData();
+
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
+    };
+  }, [timeframe]);
+
+  return { marketData, alerts, loading };
+};
