@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { calculateRSI } from '../utils/rsi';
 import { Alert } from '../types';
 import { sendTelegramMessage } from '../utils/telegram';
+import { useSupabaseData } from './useSupabaseData';
 
 const SYMBOLS = [
   'BTCUSDT', 'XRPUSDT', 'AVAXUSDT', 'DOTUSDT', 'BNBUSDT', 
@@ -29,6 +30,7 @@ export const useBinanceTradingData = (timeframe: string) => {
   const [marketData, setMarketData] = useState<MarketData[]>(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const { saveAlert } = useSupabaseData();
   
   const priceHistories = useRef<Map<string, number[]>>(new Map());
   const lastAlertTimestamps = useRef<Map<string, number>>(new Map());
@@ -161,6 +163,9 @@ export const useBinanceTradingData = (timeframe: string) => {
                       };
                       setAlerts(prev => [newAlert, ...prev].slice(0, 50));
                       lastAlertTimestamps.current.set(alertKey, now);
+                      
+                      // Save alert to Supabase
+                      saveAlert(newAlert, timeframe);
                   }
                 }
               }

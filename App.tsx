@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBinanceTradingData } from './hooks/useBinanceTradingData';
+import { useSupabaseData } from './hooks/useSupabaseData';
 import { Alert, PaperTrade, TradeStatus, CloseReason, TradeSide } from './types';
 import { Header } from './components/Header';
 import { MarketOverview } from './components/MarketOverview';
@@ -8,15 +9,28 @@ import { Card } from './components/Card';
 import { AlertCard } from './components/AlertCard';
 import { LogTradeModal } from './components/LogTradeModal';
 import { TradeRow } from './components/TradeRow';
+import { AlertHistoryModal } from './components/AlertHistoryModal';
 
 const App: React.FC = () => {
   const [timeframe, setTimeframe] = useState('5m');
   const { marketData, alerts, loading } = useBinanceTradingData(timeframe);
+  const { saveTrade, updateTrade, loadTrades, isConnected } = useSupabaseData();
   const [paperTrades, setPaperTrades] = useState<PaperTrade[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [alertIdMap, setAlertIdMap] = useState<Map<string, string>>(new Map());
+  const [showAlertHistory, setShowAlertHistory] = useState(false);
 
   const openTrades = paperTrades.filter(t => t.status === TradeStatus.OPEN);
   const closedTrades = paperTrades.filter(t => t.status === TradeStatus.CLOSED);
+
+  // Load trades from Supabase on component mount
+  useEffect(() => {
+    if (isConnected) {
+      loadTrades().then(trades => {
+        setPaperTrades(trades);
+      });
+    }
+  }, [isConnected, loadTrades]);
 
   // Effect to check for TP/SL on open trades
   useEffect(() => {
@@ -58,6 +72,11 @@ const App: React.FC = () => {
         setPaperTrades(prevTrades =>
           prevTrades.map(pt => tradesToUpdate.find(ut => ut.id === pt.id) || pt)
         );
+        
+        // Update trades in Supabase
+        tradesToUpdate.forEach(trade => {
+          updateTrade(trade);
+        });
       }
     }
   }, [marketData, openTrades]);
@@ -70,12 +89,28 @@ const App: React.FC = () => {
       openedAt: new Date(),
     };
     setPaperTrades(prev => [newTrade, ...prev]);
+    
+    // Save trade to Supabase with alert ID if available
+    const alertId = alertIdMap.get(selectedAlert?.id || '');
+    saveTrade(newTrade, alertId);
+    
     setSelectedAlert(null);
   };
 
+  // Update alert ID mapping when alerts change
+  useEffect(() => {
+    const newMap = new Map<string, string>();
+    alerts.forEach(alert => {
+      // For demo purposes, we'll use the alert's local ID as a reference
+      // In a real app, you'd get the actual Supabase ID from the saveAlert response
+      newMap.set(alert.id, alert.id);
+    });
+    setAlertIdMap(newMap);
+  }, [alerts]);
+
   return (
     <div className="bg-gray-900 text-white min-h-screen font-sans">
-      <Header loading={loading} />
+      <Header loading={loading} supabaseConnected={isConnected} />
       <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
@@ -87,6 +122,14 @@ const App: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
             <Card title="RSI Alerts" count={alerts.length}>
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowAlertHistory(true)}
+                  className="text-sm text-blue-400 hover:text-blue-300 underline"
+                >
+                  View Alert History
+                </button>
+              </div>
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {alerts.length > 0 ? (
                   alerts.map(alert => (
@@ -155,6 +198,10 @@ const App: React.FC = () => {
             onClose={() => setSelectedAlert(null)}
             onLogTrade={handleLogTrade}
           />
+        )}
+        
+        {showAlertHistory && (
+          <AlertHistoryModal onClose={() => setShowAlertHistory(false)} />
         )}
       </main>
     </div>
