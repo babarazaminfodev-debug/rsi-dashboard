@@ -151,6 +151,8 @@ export const useSupabaseData = () => {
 
       if (!data) return [];
 
+      if (!data) return [];
+
       return data.map(trade => ({
         id: trade.id,
         symbol: trade.symbol,

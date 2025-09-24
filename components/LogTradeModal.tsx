@@ -19,6 +19,7 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
   const [sl, setSl] = useState('');
   const [qty, setQty] = useState('');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     const entry = parseFloat(entryPrice);
@@ -38,6 +39,34 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all numeric inputs
+    const parsedEntryPrice = parseFloat(entryPrice);
+    const parsedTp = parseFloat(tp);
+    const parsedSl = parseFloat(sl);
+    const parsedQty = parseFloat(qty);
+    
+    const newErrors: {[key: string]: string} = {};
+    
+    if (isNaN(parsedEntryPrice) || parsedEntryPrice <= 0) {
+      newErrors.entryPrice = 'Entry price must be a valid positive number';
+    }
+    if (isNaN(parsedTp) || parsedTp <= 0) {
+      newErrors.tp = 'Take profit must be a valid positive number';
+    }
+    if (isNaN(parsedSl) || parsedSl <= 0) {
+      newErrors.sl = 'Stop loss must be a valid positive number';
+    }
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+      newErrors.qty = 'Quantity must be a valid positive number';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    setErrors({});
     
     // Validate all numeric inputs
     const parsedEntryPrice = parseFloat(entryPrice);
@@ -99,10 +128,12 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
               <label htmlFor="entryPrice" className="block text-sm font-medium text-gray-300 mb-1">Entry Price</label>
               <input type="number" id="entryPrice" value={entryPrice} onChange={e => setEntryPrice(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${errors.entryPrice ? 'border-red-500' : 'border-gray-600'}`} required />
               {errors.entryPrice && <p className="text-red-400 text-xs mt-1">{errors.entryPrice}</p>}
+              {errors.entryPrice && <p className="text-red-400 text-xs mt-1">{errors.entryPrice}</p>}
             </div>
             <div>
               <label htmlFor="qty" className="block text-sm font-medium text-gray-300 mb-1">Quantity</label>
               <input type="number" id="qty" value={qty} onChange={e => setQty(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${errors.qty ? 'border-red-500' : 'border-gray-600'}`} required />
+              {errors.qty && <p className="text-red-400 text-xs mt-1">{errors.qty}</p>}
               {errors.qty && <p className="text-red-400 text-xs mt-1">{errors.qty}</p>}
             </div>
           </div>
@@ -112,10 +143,12 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
               <label htmlFor="tp" className="block text-sm font-medium text-green-400 mb-1">Take Profit (TP)</label>
               <input type="number" id="tp" value={tp} onChange={e => setTp(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 ${errors.tp ? 'border-red-500' : 'border-gray-600'}`} required />
               {errors.tp && <p className="text-red-400 text-xs mt-1">{errors.tp}</p>}
+              {errors.tp && <p className="text-red-400 text-xs mt-1">{errors.tp}</p>}
             </div>
             <div>
               <label htmlFor="sl" className="block text-sm font-medium text-red-400 mb-1">Stop Loss (SL)</label>
               <input type="number" id="sl" value={sl} onChange={e => setSl(e.target.value)} className={`w-full bg-gray-900 border rounded-md p-2 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 ${errors.sl ? 'border-red-500' : 'border-gray-600'}`} required />
+              {errors.sl && <p className="text-red-400 text-xs mt-1">{errors.sl}</p>}
               {errors.sl && <p className="text-red-400 text-xs mt-1">{errors.sl}</p>}
             </div>
           </div>
