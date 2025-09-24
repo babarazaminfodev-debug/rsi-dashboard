@@ -10,11 +10,25 @@ View your app in AI Studio: https://ai.studio/apps/drive/17wzKDSyj5yCzo4IvLiTNqx
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js and Supabase project
 
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Create a `.env.local` file in the project root and add your environment variables:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key_here
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+   
+   **To get your Supabase credentials:**
+   - Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+   - Select your project (or create a new one)
+   - Go to Settings → API
+   - Copy the "Project URL" and "anon public" key
+
 3. Run the app:
    `npm run dev`
+
+**Note:** If you see "Failed to fetch" errors, make sure your Supabase environment variables are correctly set and restart the development server.

@@ -26,6 +26,11 @@ export const useSupabaseData = () => {
     if (!isConnected) return null;
 
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured. Alert not saved.');
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('rsi_alerts')
         .insert({
@@ -116,6 +121,22 @@ export const useSupabaseData = () => {
     if (!isConnected) return [];
 
     try {
+      
+      if (!supabase) {
+        console.warn('Supabase not configured. Please set up environment variables.');
+        return;
+      }
+      
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not saved.');
+        return null;
+      }
+      
+      if (!supabase) {
+        console.warn('Supabase not configured. Trade not updated.');
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('paper_trades')
         .select('*')
@@ -151,6 +172,12 @@ export const useSupabaseData = () => {
     if (!isConnected) return [];
 
     try {
+      
+      if (!supabase) {
+        console.warn('Supabase not configured. Please set up environment variables.');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('rsi_alerts')
         .select('*')
