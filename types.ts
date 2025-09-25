@@ -39,3 +39,32 @@ export interface PaperTrade {
   profit?: number;
   reason?: CloseReason;
 }
+
+// Types for Auto-Trader
+export enum AutoTradeStatus {
+  OPEN = 'OPEN',
+  TP_HIT = 'TP_HIT',
+  SL_HIT = 'SL_HIT',
+  MISSED = 'MISSED',
+}
+
+export interface AutoTrade {
+  id: string;
+  symbol: string;
+  entryPrice: number;
+  tp: number;
+  sl: number;
+  qty: number;
+  investment: number;
+  status: AutoTradeStatus;
+  openedAt: Date;
+  closedAt?: Date;
+  closePrice?: number;
+  profit?: number;
+}
+
+export interface AutoTraderSettings {
+  capital: number;
+  riskPercent: number;
+  isActive: boolean;
+}

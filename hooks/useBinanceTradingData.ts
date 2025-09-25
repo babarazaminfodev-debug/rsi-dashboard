@@ -2,11 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { calculateRSI } from '../utils/rsi';
 import { Alert } from '../types';
 import { sendTelegramMessage } from '../utils/telegram';
+import { SYMBOLS } from '../constants';
 
-const SYMBOLS = [
-  'BTCUSDT', 'XRPUSDT', 'AVAXUSDT', 'DOTUSDT', 'BNBUSDT', 
-  'ARBUSDT', 'ETHUSDT', 'SOLUSDT', 'LTCUSDT', 'FETUSDT'
-];
 const RSI_PERIOD = 14;
 const OVERSOLD_THRESHOLD = 30;
 const OVERBOUGHT_THRESHOLD = 70;
@@ -42,7 +39,7 @@ export const useBinanceTradingData = (timeframe: string) => {
     setMarketData(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
 
     if (ws.current) {
-      ws.current.close();
+      ws.current.close(1000, "Timeframe changed");
       ws.current = null;
     }
     
@@ -176,14 +173,18 @@ export const useBinanceTradingData = (timeframe: string) => {
       };
 
       newWs.onerror = (error) => {
-        console.error('Binance WebSocket error:', error);
+        console.error('Binance WebSocket error. For details, check the browser\'s developer console network tab.');
         setLoading(false);
       };
 
-      newWs.onclose = () => {
-        console.log('Binance WebSocket disconnected. Attempting to reconnect...');
-        if (ws.current && ws.current.readyState === WebSocket.CLOSED) {
-            setTimeout(connectWebSocket, 5000);
+      newWs.onclose = (event) => {
+        // A close code of 1000 is a "Normal Closure" meaning the connection was closed intentionally.
+        // We only want to attempt reconnection on unexpected closures.
+        if (event.code !== 1000) {
+          console.warn(`Binance WebSocket disconnected unexpectedly (Code: ${event.code}). Attempting to reconnect...`);
+          setTimeout(connectWebSocket, 5000);
+        } else {
+          console.log("Binance WebSocket closed cleanly.");
         }
       };
     };
@@ -192,7 +193,7 @@ export const useBinanceTradingData = (timeframe: string) => {
 
     return () => {
       if (ws.current) {
-        ws.current.close();
+        ws.current.close(1000, "Component unmounting");
         ws.current = null;
       }
     };
