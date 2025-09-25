@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MarketData } from '../../hooks/useBinanceTradingData';
-import { useAutoTrader } from '../../hooks/useAutoTrader';
-import { ToastMessage } from '../Toast';
+import { useSupabaseAutoTrader } from '../../hooks/useSupabaseAutoTrader';
 import { SettingsCard } from './SettingsCard';
 import { PortfolioStatsCard } from './PortfolioStatsCard';
 import { AutoTradeHistory } from './AutoTradeHistory';
@@ -12,7 +11,7 @@ interface AutoTraderDashboardProps {
 }
 
 export const AutoTraderDashboard: React.FC<AutoTraderDashboardProps> = ({ marketData, addToast }) => {
-  const { settings, setSettings, autoTrades, portfolioStats } = useAutoTrader(marketData, addToast);
+  const { settings, setSettings, autoTrades, portfolioStats } = useSupabaseAutoTrader(marketData, addToast);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

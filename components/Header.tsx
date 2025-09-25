@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface HeaderProps {
   loading: boolean;
@@ -7,6 +8,12 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ loading, onLoginClick, onSignupClick }) => {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="bg-gray-800/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,10 +35,24 @@ export const Header: React.FC<HeaderProps> = ({ loading, onLoginClick, onSignupC
                 </>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-300 hidden sm:inline-block">
+                  Welcome, {user.email}
+                </span>
+                <button 
+                  onClick={handleSignOut}
+                  className="px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700/50 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
                 <button onClick={onLoginClick} className="px-4 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700/50 transition-colors">Login</button>
                 <button onClick={onSignupClick} className="px-4 py-2 text-sm font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Sign Up</button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
