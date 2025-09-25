@@ -188,22 +188,22 @@ const App: React.FC = () => {
         ) : (
           <AutoTraderDashboard marketData={marketData} />
         )}
-        
-        {selectedAlert && (
-          <LogTradeModal
-            alert={selectedAlert}
-            onClose={() => setSelectedAlert(null)}
-            onLogTrade={handleLogTrade}
-          />
-        )}
-
-        {isAuthModalOpen && (
-          <AuthModal
-            initialMode={authMode}
-            onClose={handleCloseAuthModal}
-          />
-        )}
       </main>
+
+      {selectedAlert && (
+        <LogTradeModal
+          alert={selectedAlert}
+          onClose={() => setSelectedAlert(null)}
+          onLogTrade={handleLogTrade}
+        />
+      )}
+
+      {isAuthModalOpen && (
+        <AuthModal
+          initialMode={authMode}
+          onClose={handleCloseAuthModal}
+        />
+      )}
     </div>
   );
 };
