@@ -106,8 +106,15 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <div className="flex items-center gap-4">
               <DashboardToggle mode={dashboardMode} setMode={setDashboardMode} />
-              <TimeframeSelector selectedTimeframe={timeframe} onTimeframeChange={setTimeframe} />
+              <div className="hidden sm:block">
+                <TimeframeSelector selectedTimeframe={timeframe} onTimeframeChange={setTimeframe} />
+              </div>
             </div>
+        </div>
+
+        {/* Mobile-only Timeframe Selector */}
+        <div className="block sm:hidden">
+          <TimeframeSelector selectedTimeframe={timeframe} onTimeframeChange={setTimeframe} />
         </div>
 
         {dashboardMode === 'manual' ? (
