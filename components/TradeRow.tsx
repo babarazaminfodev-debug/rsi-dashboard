@@ -6,6 +6,7 @@ import { ArrowDownLeftIcon } from './icons/ArrowDownLeftIcon';
 
 interface TradeRowProps {
   trade: PaperTrade;
+  onCloseTrade?: (tradeId: string) => void;
 }
 
 const formatDuration = (start: Date, end: Date): string => {
@@ -17,7 +18,7 @@ const formatDuration = (start: Date, end: Date): string => {
     return `${hours}h ${minutes % 60}m`;
 };
 
-export const TradeRow: React.FC<TradeRowProps> = ({ trade }) => {
+export const TradeRow: React.FC<TradeRowProps> = ({ trade, onCloseTrade }) => {
   const isBuy = trade.side === TradeSide.BUY;
 
   if (trade.status === TradeStatus.OPEN) {
@@ -39,6 +40,17 @@ export const TradeRow: React.FC<TradeRowProps> = ({ trade }) => {
         </td>
         <td className="p-3 font-mono hidden sm:table-cell">{trade.qty}</td>
         <td className="p-3 text-gray-400 text-sm hidden lg:table-cell">{trade.openedAt.toLocaleTimeString()}</td>
+        <td className="p-3">
+          {onCloseTrade && (
+            <button
+              onClick={() => onCloseTrade(trade.id)}
+              className="px-2 py-1 text-xs font-medium bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
+              title="Close trade manually"
+            >
+              Close
+            </button>
+          )}
+        </td>
       </tr>
     );
   }
@@ -64,6 +76,7 @@ export const TradeRow: React.FC<TradeRowProps> = ({ trade }) => {
         <td className="p-3 text-gray-400 text-sm hidden lg:table-cell">
             {trade.closedAt ? formatDuration(trade.openedAt, trade.closedAt) : '-'}
         </td>
+        <td className="p-3"></td>
       </tr>
   );
 };

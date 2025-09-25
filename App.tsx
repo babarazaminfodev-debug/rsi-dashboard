@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useBinanceTradingData } from './hooks/useBinanceTradingData';
 import { Alert, PaperTrade, TradeStatus, CloseReason, TradeSide } from './types';
+import { savePaperTrades, loadPaperTrades } from './utils/storage';
+import { ToastContainer, useToast } from './components/Toast';
 import { Header } from './components/Header';
 import { MarketOverview } from './components/MarketOverview';
 import { TimeframeSelector } from './components/TimeframeSelector';
@@ -16,14 +18,20 @@ const App: React.FC = () => {
   const [timeframe, setTimeframe] = useState('5m');
   const [dashboardMode, setDashboardMode] = useState<'manual' | 'auto'>('manual');
   const { marketData, alerts, loading } = useBinanceTradingData(timeframe);
-  const [paperTrades, setPaperTrades] = useState<PaperTrade[]>([]);
+  const [paperTrades, setPaperTrades] = useState<PaperTrade[]>(() => loadPaperTrades());
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   const openTrades = paperTrades.filter(t => t.status === TradeStatus.OPEN);
   const closedTrades = paperTrades.filter(t => t.status === TradeStatus.CLOSED);
+
+  // Save trades to localStorage whenever they change
+  React.useEffect(() => {
+    savePaperTrades(paperTrades);
+  }, [paperTrades]);
 
   // Effect to check for TP/SL on open trades
   React.useEffect(() => {
@@ -65,6 +73,13 @@ const App: React.FC = () => {
         setPaperTrades(prevTrades =>
           prevTrades.map(pt => tradesToUpdate.find(ut => ut.id === pt.id) || pt)
         );
+        
+        // Show toast notifications for closed trades
+        tradesToUpdate.forEach(trade => {
+          const isProfit = (trade.profit || 0) > 0;
+          const message = `${trade.symbol} trade closed: ${isProfit ? '+' : ''}$${trade.profit?.toFixed(2)} (${trade.reason})`;
+          addToast(message, isProfit ? 'success' : 'error');
+        });
       }
     }
   }, [marketData, openTrades]);
@@ -78,6 +93,35 @@ const App: React.FC = () => {
     };
     setPaperTrades(prev => [newTrade, ...prev]);
     setSelectedAlert(null);
+    addToast(`Trade logged for ${tradeData.symbol}`, 'success');
+  };
+
+  const handleCloseTrade = (tradeId: string) => {
+    const trade = paperTrades.find(t => t.id === tradeId);
+    if (!trade || trade.status !== TradeStatus.OPEN) return;
+
+    const currentMarketData = marketData.find(m => m.symbol === trade.symbol);
+    if (!currentMarketData) return;
+
+    const currentPrice = currentMarketData.price;
+    const profit = (trade.side === TradeSide.BUY) 
+      ? (currentPrice - trade.entryPrice) * trade.qty 
+      : (trade.entryPrice - currentPrice) * trade.qty;
+
+    const closedTrade: PaperTrade = {
+      ...trade,
+      status: TradeStatus.CLOSED,
+      closedAt: new Date(),
+      closePrice: currentPrice,
+      profit,
+      reason: CloseReason.MANUAL,
+    };
+
+    setPaperTrades(prev => prev.map(t => t.id === tradeId ? closedTrade : t));
+    
+    const isProfit = profit > 0;
+    const message = `${trade.symbol} trade manually closed: ${isProfit ? '+' : ''}$${profit.toFixed(2)}`;
+    addToast(message, isProfit ? 'success' : 'info');
   };
 
   const handleOpenLogin = () => {
@@ -151,7 +195,13 @@ const App: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {openTrades.map(trade => <TradeRow key={trade.id} trade={trade} />)}
+                          {openTrades.map(trade => (
+                            <TradeRow 
+                              key={trade.id} 
+                              trade={trade} 
+                              onCloseTrade={handleCloseTrade}
+                            />
+                          ))}
                         </tbody>
                       </table>
                     ) : (
@@ -186,9 +236,11 @@ const App: React.FC = () => {
             </div>
           </>
         ) : (
-          <AutoTraderDashboard marketData={marketData} />
+          <AutoTraderDashboard marketData={marketData} addToast={addToast} />
         )}
       </main>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {selectedAlert && (
         <LogTradeModal
