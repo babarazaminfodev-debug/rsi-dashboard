@@ -1,7 +1,13 @@
 import React, { useMemo } from 'react';
+<<<<<<< HEAD
 import { AutoTrade } from '@/types';
 import { AutoTradeRow } from './AutoTradeRow';
 import { formatDateGroup } from '@/utils/formatters';
+=======
+import { AutoTrade, AutoTradeStatus } from '../../types';
+import { AutoTradeRow } from './AutoTradeRow';
+import { formatDateGroup } from '../../utils/formatters';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface AutoTradeHistoryProps {
   trades: AutoTrade[];
@@ -63,4 +69,8 @@ export const AutoTradeHistory: React.FC<AutoTradeHistoryProps> = ({ trades }) =>
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

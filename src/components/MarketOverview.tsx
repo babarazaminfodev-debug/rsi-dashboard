@@ -1,5 +1,9 @@
 import React from 'react';
+<<<<<<< HEAD
 import { MarketData } from '@/hooks/useBinanceTradingData';
+=======
+import { MarketData } from '../hooks/useBinanceTradingData';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 import { SymbolCard } from './SymbolCard';
 
 interface MarketOverviewProps {
@@ -33,4 +37,8 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({ marketData }) =>
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

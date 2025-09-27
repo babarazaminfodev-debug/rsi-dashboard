@@ -1,15 +1,26 @@
 'use client';
 import React, { useState, useMemo } from 'react';
+<<<<<<< HEAD
 // FIX: Using path aliases to resolve ambiguity between root and src files.
 import { MarketData } from '@/hooks/useBinanceTradingData';
 import { useAutoTrader } from '@/hooks/useAutoTrader';
 import { AutoTradeStatus } from '@/types';
+=======
+import { MarketData } from '../../hooks/useBinanceTradingData';
+import { useAutoTrader } from '../../hooks/useAutoTrader';
+import { AutoTradeStatus } from '../../types';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 import { SettingsCard } from './SettingsCard';
 import { PortfolioStatsCard } from './PortfolioStatsCard';
 import { AutoTradeHistory } from './AutoTradeHistory';
 import { OpenTradeCard } from './OpenTradeCard';
+<<<<<<< HEAD
 import { XCircleIcon } from '@/components/icons/XCircleIcon';
 import { WalletIcon } from '@/components/icons/WalletIcon';
+=======
+import { XCircleIcon } from '../icons/XCircleIcon';
+import { WalletIcon } from '../icons/WalletIcon';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface AutoTraderDashboardProps {
   marketData: MarketData[];

@@ -30,7 +30,11 @@ export interface Alert {
 
 export interface PaperTrade {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the trade with a user.
+=======
+  // Fix: Added userId to associate the trade with a user.
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   userId: string;
   symbol: string;
   entryPrice: number;
@@ -56,7 +60,11 @@ export enum AutoTradeStatus {
 
 export interface AutoTrade {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the auto-trade with a user.
+=======
+  // Fix: Added userId to associate the auto-trade with a user.
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   userId: string;
   symbol: string;
   entryPrice: number;
@@ -73,7 +81,11 @@ export interface AutoTrade {
 
 export interface Deposit {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the deposit with a user.
+=======
+  // Fix: Added userId to associate the deposit with a user.
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   userId: string;
   amount: number;
   date: Date;

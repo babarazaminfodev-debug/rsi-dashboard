@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { AutoTraderSettings } from '@/types';
 import { PlusCircleIcon } from '@/components/icons/PlusCircleIcon';
+=======
+import { AutoTraderSettings } from '../../types';
+import { PlusCircleIcon } from '../icons/PlusCircleIcon';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface SettingsCardProps {
   settings: AutoTraderSettings;
@@ -82,4 +87,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({ settings, onSettings
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

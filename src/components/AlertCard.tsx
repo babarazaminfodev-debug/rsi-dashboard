@@ -1,8 +1,14 @@
 
+<<<<<<< HEAD
 
 import React from 'react';
 import { Alert } from '@/types';
 import { formatTimeAgo } from '@/utils/formatters';
+=======
+import React from 'react';
+import { Alert } from '../types';
+import { formatTimeAgo } from '../utils/formatters';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface AlertCardProps {
   alert: Alert;
@@ -45,4 +51,8 @@ export const AlertCard: React.FC<AlertCardProps> = ({ alert, onLogTrade }) => {
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

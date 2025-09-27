@@ -1,5 +1,9 @@
 import React from 'react';
+<<<<<<< HEAD
 import { AutoTrade } from '@/types';
+=======
+import { AutoTrade } from '../../types';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface OpenTradeCardProps {
   trade: AutoTrade;
@@ -62,4 +66,8 @@ export const OpenTradeCard: React.FC<OpenTradeCardProps> = ({ trade, currentPric
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

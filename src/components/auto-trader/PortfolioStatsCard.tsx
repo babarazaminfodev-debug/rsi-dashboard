@@ -1,5 +1,9 @@
 import React, { useMemo, useState } from 'react';
+<<<<<<< HEAD
 import { AutoTrade, Deposit, AutoTradeStatus } from '@/types';
+=======
+import { AutoTrade, Deposit, AutoTradeStatus } from '../../types';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface PortfolioStats {
   currentCapital: number;
@@ -84,4 +88,8 @@ export const PortfolioStatsCard: React.FC<PortfolioStatsCardProps> = ({ stats, o
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

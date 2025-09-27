@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
+<<<<<<< HEAD
 import { calculateRSI } from '@/utils/rsi';
 import { Alert } from '@/types';
 import { sendTelegramMessage } from '@/utils/telegram';
 import { SYMBOLS } from '@/constants';
+=======
+import { calculateRSI } from '../utils/rsi';
+import { Alert } from '../types';
+import { sendTelegramMessage } from '../utils/telegram';
+import { SYMBOLS } from '../constants';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 const RSI_PERIOD = 14;
 const PRICE_HISTORY_LIMIT = 100;
@@ -204,4 +211,8 @@ export const useBinanceTradingData = (timeframe: string) => {
   const alertsRsi25 = sortedAlerts.filter(a => a.level <= RSI_LEVEL_25);
 
   return { marketData, alertsRsi30, alertsRsi25, loading };
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

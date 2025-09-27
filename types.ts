@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 export enum TradeSide {
   BUY = 'BUY',
   SELL = 'SELL',
@@ -28,8 +32,11 @@ export interface Alert {
 
 export interface PaperTrade {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the trade with a user.
   userId: string;
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   symbol: string;
   entryPrice: number;
   tp: number;
@@ -54,8 +61,11 @@ export enum AutoTradeStatus {
 
 export interface AutoTrade {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the auto-trade with a user.
   userId: string;
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   symbol: string;
   entryPrice: number;
   tp: number;
@@ -71,8 +81,11 @@ export interface AutoTrade {
 
 export interface Deposit {
   id: string;
+<<<<<<< HEAD
   // FIX: Added userId to associate the deposit with a user.
   userId: string;
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
   amount: number;
   date: Date;
 }

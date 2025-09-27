@@ -1,7 +1,13 @@
 import React from 'react';
+<<<<<<< HEAD
 import { AutoTrade, AutoTradeStatus } from '@/types';
 import { BotIcon } from '@/components/icons/BotIcon';
 import { formatDuration } from '@/utils/formatters';
+=======
+import { AutoTrade, AutoTradeStatus } from '../../types';
+import { BotIcon } from '../icons/BotIcon';
+import { formatDuration } from '../../utils/formatters';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 
 interface AutoTradeRowProps {
@@ -53,4 +59,8 @@ export const AutoTradeRow: React.FC<AutoTradeRowProps> = ({ trade }) => {
         </td>
       </tr>
     );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

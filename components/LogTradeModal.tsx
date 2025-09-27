@@ -44,8 +44,11 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
       tp: parseFloat(tp),
       sl: parseFloat(sl),
       qty: parseFloat(qty),
+<<<<<<< HEAD
       // FIX: Added placeholder userId to satisfy the PaperTrade type.
       userId: 'local-user',
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
     });
   };
 

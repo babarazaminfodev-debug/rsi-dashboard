@@ -1,8 +1,14 @@
 
+<<<<<<< HEAD
 
 import React, { useState, useEffect } from 'react';
 import { Alert, PaperTrade, TradeSide } from '@/types';
 import { XCircleIcon } from '@/components/icons/XCircleIcon';
+=======
+import React, { useState, useEffect } from 'react';
+import { Alert, PaperTrade, TradeSide } from '../types';
+import { XCircleIcon } from './icons/XCircleIcon';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 interface LogTradeModalProps {
   alert: Alert;
@@ -95,4 +101,8 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ alert, onClose, on
       </div>
     </div>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

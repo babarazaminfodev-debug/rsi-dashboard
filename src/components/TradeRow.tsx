@@ -1,10 +1,18 @@
 
+<<<<<<< HEAD
 
 import React from 'react';
 import { PaperTrade, TradeStatus, TradeSide } from '@/types';
 import { ArrowUpRightIcon } from '@/components/icons/ArrowUpRightIcon';
 import { ArrowDownLeftIcon } from '@/components/icons/ArrowDownLeftIcon';
 import { formatDuration } from '@/utils/formatters';
+=======
+import React from 'react';
+import { PaperTrade, TradeStatus, TradeSide } from '../types';
+import { ArrowUpRightIcon } from './icons/ArrowUpRightIcon';
+import { ArrowDownLeftIcon } from './icons/ArrowDownLeftIcon';
+import { formatDuration } from '../utils/formatters';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 
 
 interface TradeRowProps {
@@ -60,4 +68,8 @@ export const TradeRow: React.FC<TradeRowProps> = ({ trade }) => {
         </td>
       </tr>
   );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

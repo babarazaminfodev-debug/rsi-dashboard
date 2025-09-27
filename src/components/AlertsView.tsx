@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { Alert } from '@/types';
+=======
+import { Alert } from '../types';
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 import { AlertCard } from './AlertCard';
 
 interface AlertsViewProps {
@@ -42,4 +46,8 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ alerts30, alerts25, onLo
             </div>
         </div>
     );
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21

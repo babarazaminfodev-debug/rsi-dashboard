@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MarketData } from './useBinanceTradingData';
 import { AutoTraderSettings, AutoTrade, AutoTradeStatus, Deposit } from '../types';
@@ -44,8 +47,11 @@ export const useAutoTrader = (marketData: MarketData[]) => {
         id: `dep-${Date.now()}`,
         amount,
         date: new Date(),
+<<<<<<< HEAD
         // FIX: Added placeholder userId to satisfy Deposit type.
         userId: 'local-user',
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
       };
       setDeposits(prev => [...prev, newDeposit]);
     }
@@ -85,8 +91,11 @@ export const useAutoTrader = (marketData: MarketData[]) => {
             qty: 0,
             investment: 0,
             status: AutoTradeStatus.OPEN,
+<<<<<<< HEAD
             // FIX: Added placeholder userId to satisfy AutoTrade type.
             userId: 'local-user',
+=======
+>>>>>>> d9c53f4d6f536b217011ed3d8fb53d695764ac21
         };
 
         if (currentCapital > 0) {
