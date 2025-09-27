@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSI Realtime Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom scrollbar for a better look in dark mode */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1a202c; /* dark gray */
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: #4a5568; /* medium gray */
+        border-radius: 4px;
+        border: 2px solid #1a202c;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #718096; /* light gray */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "next/": "https://aistudiocdn.com/next@^15.5.4/",
+    "next": "https://aistudiocdn.com/next@^15.5.4",
+    "bcryptjs": "https://aistudiocdn.com/bcryptjs@^3.0.2",
+    "@prisma/client": "https://aistudiocdn.com/@prisma/client@^6.16.2",
+    "tailwindcss": "https://aistudiocdn.com/tailwindcss@^4.1.13",
+    "next-auth/": "https://aistudiocdn.com/next-auth@^4.24.11/",
+    "next-auth": "https://aistudiocdn.com/next-auth@^4.24.11"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-900 text-gray-100">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

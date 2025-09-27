@@ -1,0 +1,5 @@
+{
+  "name": "RSI Realtime Trading Dashboard",
+  "description": "A realtime dashboard that displays RSI alerts from a Supabase backend, allows users to log paper trades, and tracks the status of open and closed trades.",
+  "requestFramePermissions": []
+}

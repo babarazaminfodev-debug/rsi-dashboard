@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 3. Define your database models
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  password   String
+  role       Role      @default(USER)
+  isApproved Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  paperTrades PaperTrade[]
+  autoTrades  AutoTrade[]
+  deposits    Deposit[]
+  settings    AutoTraderSettings?
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+}
+
+enum CloseReason {
+  TP
+  SL
+  MANUAL
+}
+
+model PaperTrade {
+  id         String      @id @default(cuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  symbol     String
+  entryPrice Float
+  tp         Float
+  sl         Float
+  qty        Float
+  side       TradeSide
+  status     TradeStatus @default(OPEN)
+  openedAt   DateTime    @default(now())
+  closedAt   DateTime?
+  closePrice Float?
+  profit     Float?
+  reason     CloseReason?
+}
+
+enum AutoTradeStatus {
+  OPEN
+  TP_HIT
+  SL_HIT
+  MISSED
+}
+
+model AutoTrade {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id])
+  userId     String
+  symbol     String
+  entryPrice Float
+  tp         Float
+  sl         Float
+  qty        Float
+  investment Float
+  status     AutoTradeStatus @default(OPEN)
+  openedAt   DateTime        @default(now())
+  closedAt   DateTime?
+  closePrice Float?
+  profit     Float?
+}
+
+model Deposit {
+  id     String   @id @default(cuid())
+  user   User     @relation(fields: [userId], references: [id])
+  userId String
+  amount Float
+  date   DateTime @default(now())
+}
+
+model AutoTraderSettings {
+  id          String  @id @default(cuid())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+  capital     Float
+  riskPercent Float
+  isActive    Boolean @default(false)
+}
