@@ -3,19 +3,17 @@ import { calculateRSI } from '../utils/rsi';
 import { Alert } from '../types';
 import { sendTelegramMessage } from '../utils/telegram';
 import { SYMBOLS } from '../constants';
-import { useSupabaseData } from './useSupabaseData';
-import { useAuth } from './useAuth';
 
 const RSI_PERIOD = 14;
-const OVERSOLD_THRESHOLD = 30;
-const OVERBOUGHT_THRESHOLD = 70;
 const PRICE_HISTORY_LIMIT = 100;
-const ALERT_COOLDOWN = 5 * 60 * 1000; // 5 minutes for UI alerts
+const ALERT_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// Telegram specific thresholds
-const RSI_WARNING_THRESHOLD = 30;
-const RSI_BUY_THRESHOLD = 25;
-const RSI_RESET_THRESHOLD = 40;
+// --- Alert & Telegram Thresholds ---
+const RSI_LEVEL_30 = 30; // UI Alert & Telegram Warning
+const RSI_LEVEL_25 = 25; // UI Alert & Telegram Signal
+
+const RESET_THRESHOLD_FOR_LEVEL_30 = 40;
+const RESET_THRESHOLD_FOR_LEVEL_25 = 35;
 
 
 export interface MarketData {
@@ -24,21 +22,22 @@ export interface MarketData {
   rsi: number | null;
 }
 
-export const useBinanceTradingData = (timeframe: string, addToast?: (message: string, type?: 'success' | 'error' | 'info') => void) => {
+export const useBinanceTradingData = (timeframe: string) => {
   const [marketData, setMarketData] = useState<MarketData[]>(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const { alerts, saveAlert } = useSupabaseData();
   
   const priceHistories = useRef<Map<string, number[]>>(new Map());
-  const lastAlertTimestamps = useRef<Map<string, number>>(new Map());
+  const activeAlerts = useRef<Map<string, Alert>>(new Map());
   const telegramAlertState = useRef<Map<string, 'warned' | 'triggered'>>(new Map());
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     setLoading(true);
     priceHistories.current.clear();
+    activeAlerts.current.clear();
     telegramAlertState.current.clear();
+    setAlerts([]);
     setMarketData(SYMBOLS.map(symbol => ({ symbol, price: 0, rsi: null })));
 
     if (ws.current) {
@@ -67,7 +66,6 @@ export const useBinanceTradingData = (timeframe: string, addToast?: (message: st
           setMarketData(prev => prev.map(item => item.symbol === symbol ? { symbol, price: 0, rsi: null } : item));
         }
       }));
-
       connectWebSocket();
     };
 
@@ -93,16 +91,7 @@ export const useBinanceTradingData = (timeframe: string, addToast?: (message: st
         if (stream.endsWith('@miniTicker')) {
           const symbol = data.s;
           const price = parseFloat(data.c);
-
           setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price } : item));
-
-          const history = priceHistories.current.get(symbol);
-          if (history && history.length > RSI_PERIOD) {
-            const liveHistory = [...history.slice(0, -1), price];
-            const liveRsi = calculateRSI(liveHistory, RSI_PERIOD);
-            setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, rsi: liveRsi } : item));
-          }
-
         } else if (stream.endsWith(`@kline_${timeframe}`)) {
           const symbol = data.s;
           const kline = data.k;
@@ -118,67 +107,68 @@ export const useBinanceTradingData = (timeframe: string, addToast?: (message: st
               setMarketData(prev => prev.map(item => item.symbol === symbol ? { ...item, price: closePrice, rsi } : item));
 
               if (rsi !== null) {
-                // --- Refactored Telegram Alert Logic ---
-                const currentState = telegramAlertState.current.get(symbol);
+                const activeAlert = activeAlerts.current.get(symbol);
 
-                // 1. State Reset Logic: If RSI has recovered, reset the alert state for this symbol.
-                if (currentState && rsi > RSI_RESET_THRESHOLD) {
+                // --- Mark alerts as resettable if RSI recovers ---
+                if (activeAlert) {
+                  if (activeAlert.level === RSI_LEVEL_30 && rsi > RESET_THRESHOLD_FOR_LEVEL_30) {
+                    activeAlert.isReset = true;
+                  }
+                  if (activeAlert.level === RSI_LEVEL_25 && rsi > RESET_THRESHOLD_FOR_LEVEL_25) {
+                    activeAlert.isReset = true;
+                  }
+                }
+
+                // --- Telegram Alert State Reset Logic ---
+                const tgState = telegramAlertState.current.get(symbol);
+                if (tgState === 'triggered' && rsi > RESET_THRESHOLD_FOR_LEVEL_25) {
                     telegramAlertState.current.delete(symbol);
-                } 
-                // 2. Alert Trigger Logic: Only check for new alerts if RSI is below the warning threshold.
-                else if (rsi <= RSI_WARNING_THRESHOLD) {
-                    // Send BUY SIGNAL only if the state is currently 'warned' and RSI drops further.
-                    if (rsi <= RSI_BUY_THRESHOLD && currentState === 'warned') {
-                        const entryPrice = closePrice;
-                        const tp = entryPrice * 1.02;
-                        const sl = entryPrice * 0.99;
-                        const message = `🟢 *BUY SIGNAL* 🟢\n\n*Symbol:* ${symbol}\n*Entry Price:* ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}\n*TP:* ${tp.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (+2%)\n*SL:* ${sl.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} (-1%)`;
-                        sendTelegramMessage(message);
-                        telegramAlertState.current.set(symbol, 'triggered');
-                    }
-                    // Send WARNING signal only if there is no current state (i.e., it's the first time crossing).
-                    else if (!currentState) {
-                        const message = `⚠️ *RSI WARNING* ⚠️\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString()}\n*RSI:* ${rsi.toFixed(2)}`;
-                        sendTelegramMessage(message);
-                        telegramAlertState.current.set(symbol, 'warned');
-                    }
+                } else if (tgState === 'warned' && rsi > RESET_THRESHOLD_FOR_LEVEL_30) {
+                     telegramAlertState.current.delete(symbol);
                 }
-
-                // --- UI Alert Logic (remains unchanged) ---
-                const now = Date.now();
-                const alertKey = `${symbol}-${rsi <= OVERSOLD_THRESHOLD ? 'oversold' : 'overbought'}`;
-                const lastAlertTime = lastAlertTimestamps.current.get(alertKey) || 0;
                 
-                if (now - lastAlertTime > ALERT_COOLDOWN) {
-                  let alertConditionMet = false;
-                  let level = 0;
-                  if (rsi <= OVERSOLD_THRESHOLD) {
-                    alertConditionMet = true;
-                    level = OVERSOLD_THRESHOLD;
-                  } else if (rsi >= OVERBOUGHT_THRESHOLD) {
-                    alertConditionMet = true;
-                    level = OVERBOUGHT_THRESHOLD;
-                  }
-                  
-                  if (alertConditionMet) {
-                      const newAlert: Alert = {
-                          id: '', // Will be generated by Supabase
-                          symbol, rsi, price: closePrice, level,
-                          createdAt: new Date(),
-                      };
-                      
-                      // Save to Supabase if user is logged in
-                      if (user) {
-                        saveAlert(newAlert, timeframe);
-                        if (addToast) {
-                          const alertType = rsi <= OVERSOLD_THRESHOLD ? 'Oversold' : 'Overbought';
-                          addToast(`${alertType} alert: ${symbol} RSI ${rsi.toFixed(2)}`, 'info');
-                        }
-                      }
-                      
-                      lastAlertTimestamps.current.set(alertKey, now);
-                  }
+                // --- Alert Trigger & Aggregation Logic ---
+                let levelToTrigger: number | null = null;
+                if (rsi <= RSI_LEVEL_25) levelToTrigger = RSI_LEVEL_25;
+                else if (rsi <= RSI_LEVEL_30) levelToTrigger = RSI_LEVEL_30;
+
+                if (levelToTrigger) {
+                    const now = new Date();
+                    // If no active alert, or if it's a new sequence (isReset), or a stronger alert (30 -> 25)
+                    if (!activeAlert || activeAlert.isReset || levelToTrigger < activeAlert.level) {
+                        const newAlert: Alert = {
+                            id: `${symbol}-${levelToTrigger}-${now.getTime()}`,
+                            symbol, rsi, price: closePrice, level: levelToTrigger,
+                            createdAt: now, lastTriggeredAt: now,
+                            count: 1, isReset: false,
+                        };
+                        activeAlerts.current.set(symbol, newAlert);
+                    } else if (activeAlert.level === levelToTrigger && !activeAlert.isReset) {
+                        // Aggregate existing alert
+                        activeAlert.count += 1;
+                        activeAlert.lastTriggeredAt = now;
+                        activeAlert.rsi = rsi;
+                        activeAlert.price = closePrice;
+                    }
                 }
+                
+                // --- Telegram Message Logic ---
+                if (rsi <= RSI_LEVEL_25 && telegramAlertState.current.get(symbol) !== 'triggered') {
+                    const message = `🟢 *BUY SIGNAL* 🟢\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString(undefined, { minimumFractionDigits: 4 })}\n*RSI:* ${rsi.toFixed(2)}`;
+                    sendTelegramMessage(message);
+                    telegramAlertState.current.set(symbol, 'triggered');
+                } else if (rsi <= RSI_LEVEL_30 && !telegramAlertState.current.has(symbol)) {
+                    const message = `⚠️ *RSI WARNING* ⚠️\n\n*Symbol:* ${symbol}\n*Price:* ${closePrice.toLocaleString()}\n*RSI:* ${rsi.toFixed(2)}`;
+                    sendTelegramMessage(message);
+                    telegramAlertState.current.set(symbol, 'warned');
+                }
+                
+                // Update state with current alerts, filtering out expired ones
+                const nowMs = Date.now();
+                const freshAlerts = Array.from(activeAlerts.current.values())
+                    .filter(alert => (nowMs - alert.createdAt.getTime()) < ALERT_EXPIRATION_MS);
+                
+                setAlerts(freshAlerts);
               }
           }
         }
@@ -190,8 +180,6 @@ export const useBinanceTradingData = (timeframe: string, addToast?: (message: st
       };
 
       newWs.onclose = (event) => {
-        // A close code of 1000 is a "Normal Closure" meaning the connection was closed intentionally.
-        // We only want to attempt reconnection on unexpected closures.
         if (event.code !== 1000) {
           console.warn(`Binance WebSocket disconnected unexpectedly (Code: ${event.code}). Attempting to reconnect...`);
           setTimeout(connectWebSocket, 5000);
@@ -209,7 +197,11 @@ export const useBinanceTradingData = (timeframe: string, addToast?: (message: st
         ws.current = null;
       }
     };
-  }, [timeframe, user]);
+  }, [timeframe]);
+  
+  const sortedAlerts = alerts.sort((a,b) => b.lastTriggeredAt.getTime() - a.lastTriggeredAt.getTime());
+  const alertsRsi30 = sortedAlerts.filter(a => a.level > RSI_LEVEL_25 && a.level <= RSI_LEVEL_30);
+  const alertsRsi25 = sortedAlerts.filter(a => a.level <= RSI_LEVEL_25);
 
-  return { marketData, alerts, loading };
+  return { marketData, alertsRsi30, alertsRsi25, loading };
 };

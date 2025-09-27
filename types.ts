@@ -22,6 +22,9 @@ export interface Alert {
   price: number;
   level: number;
   createdAt: Date;
+  count: number;
+  lastTriggeredAt: Date;
+  isReset: boolean;
 }
 
 export interface PaperTrade {
@@ -61,6 +64,12 @@ export interface AutoTrade {
   closedAt?: Date;
   closePrice?: number;
   profit?: number;
+}
+
+export interface Deposit {
+  id: string;
+  amount: number;
+  date: Date;
 }
 
 export interface AutoTraderSettings {

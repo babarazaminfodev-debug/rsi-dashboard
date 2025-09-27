@@ -1,19 +1,12 @@
 import React from 'react';
 import { AutoTrade, AutoTradeStatus } from '../../types';
 import { BotIcon } from '../icons/BotIcon';
+import { formatDuration } from '../../utils/formatters';
+
 
 interface AutoTradeRowProps {
   trade: AutoTrade;
 }
-
-const formatDuration = (start: Date, end: Date): string => {
-    const seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ${minutes % 60}m`;
-};
 
 const getStatusStyles = (status: AutoTradeStatus) => {
     switch(status) {
@@ -24,7 +17,7 @@ const getStatusStyles = (status: AutoTradeStatus) => {
         case AutoTradeStatus.SL_HIT:
             return { bg: 'bg-red-500/20', text: 'text-red-400', label: 'SL HIT' };
         case AutoTradeStatus.MISSED:
-            return { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'MISSED' };
+            return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'MISSED' };
         default:
             return { bg: '', text: '', label: '' };
     }
@@ -38,7 +31,7 @@ export const AutoTradeRow: React.FC<AutoTradeRowProps> = ({ trade }) => {
     const pnlColor = trade.profit && trade.profit > 0 ? 'text-green-500' : 'text-red-500';
     
     return (
-      <tr className={`border-b border-gray-700/50 hover:bg-gray-800/60 transition-colors ${(isMissed || isClosed) && 'opacity-60'}`}>
+      <tr className={`hover:bg-gray-800/60 transition-colors ${(isMissed || isClosed) && 'opacity-70'}`}>
         <td className="p-3 font-medium flex items-center gap-2">
             <BotIcon className={statusStyle.text} />
             {trade.symbol}
@@ -56,7 +49,7 @@ export const AutoTradeRow: React.FC<AutoTradeRowProps> = ({ trade }) => {
             {isMissed ? 'N/A' : trade.profit?.toFixed(2) ?? '...'}
         </td>
         <td className="p-3 text-gray-400 text-sm hidden sm:table-cell">
-            {trade.closedAt ? formatDuration(trade.openedAt, trade.closedAt) : '...'}
+            {trade.closedAt && trade.status !== AutoTradeStatus.OPEN ? formatDuration(new Date(trade.openedAt), new Date(trade.closedAt)) : '...'}
         </td>
       </tr>
     );

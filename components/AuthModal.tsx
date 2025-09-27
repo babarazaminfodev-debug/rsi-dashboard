@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { UserIcon } from './icons/UserIcon';
 import { LockIcon } from './icons/LockIcon';
@@ -7,45 +6,18 @@ import { LockIcon } from './icons/LockIcon';
 interface AuthModalProps {
   initialMode: 'login' | 'signup';
   onClose: () => void;
-  onSuccess?: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose, onSuccess }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) => {
   const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { signIn, signUp } = useAuth();
-  
   const isLogin = mode === 'login';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-      } else {
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match');
-        }
-        const { error } = await signUp(email, password, fullName);
-        if (error) throw error;
-      }
-      
-      onSuccess?.();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    // User will add their own backend logic here.
+    console.log('Form submitted. Backend implementation pending.');
+    // In a real app, you might close the modal on success:
+    // onClose(); 
   };
   
   const title = isLogin ? 'Welcome Back' : 'Create an Account';
@@ -59,47 +31,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose, onSu
         <h2 className="text-2xl font-bold mb-2">{title}</h2>
         <p className="text-gray-400 mb-6">{isLogin ? 'Sign in to continue.' : 'Get started with a free account.'}</p>
         
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-md text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <UserIcon className="text-gray-500" />
-                </span>
-                <input 
-                  type="text" 
-                  id="fullName" 
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                  placeholder="John Doe" 
-                />
-              </div>
-            </div>
-          )}
-          
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <UserIcon className="text-gray-500" />
               </span>
-              <input 
-                type="email" 
-                id="email" 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                required 
-                placeholder="you@example.com" 
-              />
+              <input type="email" id="email" className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="you@example.com" />
             </div>
           </div>
           
@@ -109,12 +48,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose, onSu
                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <LockIcon className="text-gray-500" />
               </span>
-              <input 
-                type="password" 
-                id="password" 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="••••••••" />
+              <input type="password" id="password" className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="••••••••" />
             </div>
           </div>
 
@@ -125,18 +59,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose, onSu
                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                   <LockIcon className="text-gray-500" />
                 </span>
-                <input 
-                  type="password" 
-                  id="confirmPassword" 
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="••••••••" />
+                <input type="password" id="confirmPassword" className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 pl-10 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required placeholder="••••••••" />
               </div>
             </div>
           )}
           
-          <button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-colors mt-2">
-            {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Create Account')}
+          <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md transition-colors mt-2">
+            {isLogin ? 'Login' : 'Create Account'}
           </button>
         </form>
         

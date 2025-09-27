@@ -3,22 +3,14 @@ import React from 'react';
 import { PaperTrade, TradeStatus, TradeSide } from '../types';
 import { ArrowUpRightIcon } from './icons/ArrowUpRightIcon';
 import { ArrowDownLeftIcon } from './icons/ArrowDownLeftIcon';
+import { formatDuration } from '../utils/formatters';
+
 
 interface TradeRowProps {
   trade: PaperTrade;
-  onCloseTrade?: (tradeId: string) => void;
 }
 
-const formatDuration = (start: Date, end: Date): string => {
-    const seconds = Math.floor((end.getTime() - start.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ${minutes % 60}m`;
-};
-
-export const TradeRow: React.FC<TradeRowProps> = ({ trade, onCloseTrade }) => {
+export const TradeRow: React.FC<TradeRowProps> = ({ trade }) => {
   const isBuy = trade.side === TradeSide.BUY;
 
   if (trade.status === TradeStatus.OPEN) {
@@ -40,17 +32,6 @@ export const TradeRow: React.FC<TradeRowProps> = ({ trade, onCloseTrade }) => {
         </td>
         <td className="p-3 font-mono hidden sm:table-cell">{trade.qty}</td>
         <td className="p-3 text-gray-400 text-sm hidden lg:table-cell">{trade.openedAt.toLocaleTimeString()}</td>
-        <td className="p-3">
-          {onCloseTrade && (
-            <button
-              onClick={() => onCloseTrade(trade.id)}
-              className="px-2 py-1 text-xs font-medium bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
-              title="Close trade manually"
-            >
-              Close
-            </button>
-          )}
-        </td>
       </tr>
     );
   }
@@ -76,7 +57,6 @@ export const TradeRow: React.FC<TradeRowProps> = ({ trade, onCloseTrade }) => {
         <td className="p-3 text-gray-400 text-sm hidden lg:table-cell">
             {trade.closedAt ? formatDuration(trade.openedAt, trade.closedAt) : '-'}
         </td>
-        <td className="p-3"></td>
       </tr>
   );
 };

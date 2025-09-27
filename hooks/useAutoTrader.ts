@@ -1,69 +1,79 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MarketData } from './useBinanceTradingData';
-import { AutoTraderSettings, AutoTrade, AutoTradeStatus } from '../types';
-import { 
-  saveAutoTrades, 
-  loadAutoTrades, 
-  saveAutoTraderSettings, 
-  loadAutoTraderSettings,
-  saveAutoTraderCapital,
-  loadAutoTraderCapital 
-} from '../utils/storage';
+import { AutoTraderSettings, AutoTrade, AutoTradeStatus, Deposit } from '../types';
+import { usePersistentState } from './usePersistentState';
 
 const RSI_TRIGGER_THRESHOLD = 25;
-const RSI_RESET_THRESHOLD = 40;
+const RSI_RESET_THRESHOLD = 35;
 const TP_PERCENT = 1.02; // 2% Take Profit
 const SL_PERCENT = 0.99; // 1% Stop Loss
 
-export const useAutoTrader = (marketData: MarketData[], addToast?: (message: string, type?: 'success' | 'error' | 'info') => void) => {
-  const [settings, setSettings] = useState<AutoTraderSettings>(() => loadAutoTraderSettings());
-  const [autoTrades, setAutoTrades] = useState<AutoTrade[]>(() => loadAutoTrades());
-  const [currentCapital, setCurrentCapital] = useState(() => loadAutoTraderCapital());
-  const tradeTriggerState = useRef<Map<string, 'triggered' | 'idle'>>(new Map());
+export const useAutoTrader = (marketData: MarketData[]) => {
+  const [settings, setSettings] = usePersistentState<AutoTraderSettings>('autoTraderSettings', {
+    capital: 1000,
+    riskPercent: 10,
+    isActive: false,
+  });
+  
+  const [autoTrades, setAutoTrades] = usePersistentState<AutoTrade[]>('autoTraderTrades', []);
+  const [deposits, setDeposits] = usePersistentState<Deposit[]>('autoTraderDeposits', []);
 
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    saveAutoTraderSettings(settings);
-  }, [settings]);
+  const tradeTriggerState = useState<Map<string, 'triggered' | 'idle'>>(new Map())[0];
 
-  useEffect(() => {
-    saveAutoTrades(autoTrades);
-  }, [autoTrades]);
+  const initialCapital = useMemo(() => {
+    return deposits.reduce((acc, d) => acc + d.amount, 0);
+  }, [deposits]);
 
-  useEffect(() => {
-    saveAutoTraderCapital(currentCapital);
-  }, [currentCapital]);
+  const currentCapital = useMemo(() => {
+      const openInvestments = autoTrades
+        .filter(t => t.status === AutoTradeStatus.OPEN)
+        .reduce((acc, trade) => acc + trade.investment, 0);
+      
+      const closedPnl = autoTrades
+        .filter(t => t.status === AutoTradeStatus.TP_HIT || t.status === AutoTradeStatus.SL_HIT)
+        .reduce((acc, trade) => acc + (trade.profit || 0), 0);
 
-  // Reset capital when settings change
-  useEffect(() => {
-    setCurrentCapital(settings.capital);
-  }, [settings.capital]);
+      return initialCapital + closedPnl - openInvestments;
+  }, [autoTrades, initialCapital]);
+
+
+  const addDeposit = useCallback((amount: number) => {
+    if (amount > 0) {
+      const newDeposit: Deposit = {
+        id: `dep-${Date.now()}`,
+        amount,
+        date: new Date(),
+      };
+      setDeposits(prev => [...prev, newDeposit]);
+    }
+  }, [setDeposits]);
 
   // Core Trade Logic: Entry and Monitoring
   useEffect(() => {
     if (!settings.isActive || marketData.length === 0) return;
 
+    const openTrades = autoTrades.filter(t => t.status === AutoTradeStatus.OPEN);
     const tradesToUpdate: AutoTrade[] = [];
-    const openOrMissedTrades = autoTrades.filter(t => t.status === AutoTradeStatus.OPEN || t.status === AutoTradeStatus.MISSED);
+    const newTrades: AutoTrade[] = [];
 
     marketData.forEach(data => {
       const { symbol, price, rsi } = data;
       if (price === 0 || rsi === null) return;
 
-      const triggerState = tradeTriggerState.current.get(symbol) || 'idle';
+      const triggerState = tradeTriggerState.get(symbol) || 'idle';
 
       // --- Reset trigger state if RSI recovers ---
       if (triggerState === 'triggered' && rsi > RSI_RESET_THRESHOLD) {
-        tradeTriggerState.current.set(symbol, 'idle');
+        tradeTriggerState.set(symbol, 'idle');
       }
 
       // --- New trade entry logic ---
       if (triggerState === 'idle' && rsi <= RSI_TRIGGER_THRESHOLD) {
-        tradeTriggerState.current.set(symbol, 'triggered');
+        tradeTriggerState.set(symbol, 'triggered');
         
-        const investment = currentCapital * (settings.riskPercent / 100);
+        const investment = settings.capital * (settings.riskPercent / 100);
         
-        const newTrade: Omit<AutoTrade, 'id'> = {
+        const baseNewTrade: Omit<AutoTrade, 'id'> = {
             symbol,
             entryPrice: price,
             tp: price * TP_PERCENT,
@@ -76,26 +86,17 @@ export const useAutoTrader = (marketData: MarketData[], addToast?: (message: str
 
         if (currentCapital > 0) {
             const actualInvestment = Math.min(investment, currentCapital);
-            newTrade.investment = actualInvestment;
-            newTrade.qty = actualInvestment / price;
-            setCurrentCapital(prev => prev - actualInvestment);
+            baseNewTrade.investment = actualInvestment;
+            baseNewTrade.qty = actualInvestment / price;
         } else {
-            newTrade.status = AutoTradeStatus.MISSED;
+            baseNewTrade.status = AutoTradeStatus.MISSED;
         }
 
-        setAutoTrades(prev => [...prev, { ...newTrade, id: `${symbol}-${Date.now()}` }]);
-        
-        if (addToast) {
-          if (newTrade.status === AutoTradeStatus.OPEN) {
-            addToast(`Auto-trade opened: ${symbol} at ${price.toLocaleString()}`, 'info');
-          } else {
-            addToast(`Auto-trade missed: ${symbol} (insufficient capital)`, 'error');
-          }
-        }
+        newTrades.push({ ...baseNewTrade, id: `${symbol}-${Date.now()}` });
       }
 
-      // --- Monitor existing open/missed trades for this symbol ---
-      openOrMissedTrades.forEach(trade => {
+      // --- Monitor existing open trades for this symbol ---
+      openTrades.forEach(trade => {
         if (trade.symbol === symbol) {
             let closeReason: 'TP' | 'SL' | null = null;
             if (price >= trade.tp) closeReason = 'TP';
@@ -110,31 +111,20 @@ export const useAutoTrader = (marketData: MarketData[], addToast?: (message: str
                     closePrice: price,
                     profit,
                 };
-
-                // If it was a real trade, add proceeds back to capital
-                if (trade.status === AutoTradeStatus.OPEN) {
-                    setCurrentCapital(prev => prev + trade.investment + profit);
-                }
-                
-                if (addToast && trade.status === AutoTradeStatus.OPEN) {
-                  const isProfit = profit > 0;
-                  const message = `Auto-trade closed: ${symbol} ${isProfit ? '+' : ''}$${profit.toFixed(2)} (${closeReason})`;
-                  addToast(message, isProfit ? 'success' : 'error');
-                }
-                
                 tradesToUpdate.push(updatedTrade);
             }
         }
       });
     });
 
-    if (tradesToUpdate.length > 0) {
-        setAutoTrades(prevTrades => 
-            prevTrades.map(pt => tradesToUpdate.find(ut => ut.id === pt.id) || pt)
-        );
+    if (newTrades.length > 0 || tradesToUpdate.length > 0) {
+        setAutoTrades(prevTrades => {
+            const updated = prevTrades.map(pt => tradesToUpdate.find(ut => ut.id === pt.id) || pt);
+            return [...updated, ...newTrades];
+        });
     }
 
-  }, [marketData, settings.isActive, addToast]);
+  }, [marketData, settings.isActive, settings.capital, settings.riskPercent, autoTrades, currentCapital, setAutoTrades, tradeTriggerState]);
 
 
   const portfolioStats = useMemo(() => {
@@ -145,15 +135,33 @@ export const useAutoTrader = (marketData: MarketData[], addToast?: (message: str
     const winRate = closedTrades.length > 0 ? (wins / closedTrades.length) * 100 : 0;
     
     return {
-        initialCapital: settings.capital,
+        initialCapital,
         currentCapital,
         totalPnl,
         winRate,
         wins,
         losses,
     };
-  }, [autoTrades, currentCapital, settings.capital]);
+  }, [autoTrades, currentCapital, initialCapital]);
+  
+  const capitalAllocation = useMemo(() => {
+      const openTrades = autoTrades.filter(t => t.status === AutoTradeStatus.OPEN);
+      const invested = openTrades.reduce((acc, trade) => {
+        if (!acc[trade.symbol]) {
+            acc[trade.symbol] = 0;
+        }
+        acc[trade.symbol] += trade.investment;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      return {
+        invested,
+        available: currentCapital,
+        total: currentCapital + Object.values(invested).reduce((sum, val) => sum + val, 0)
+      }
+
+  }, [autoTrades, currentCapital]);
 
 
-  return { settings, setSettings, autoTrades, portfolioStats };
+  return { settings, setSettings, autoTrades, portfolioStats, addDeposit, deposits, capitalAllocation };
 };

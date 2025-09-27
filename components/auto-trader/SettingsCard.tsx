@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { AutoTraderSettings } from '../../types';
+import { PlusCircleIcon } from '../icons/PlusCircleIcon';
 
 interface SettingsCardProps {
   settings: AutoTraderSettings;
   onSettingsChange: (newSettings: AutoTraderSettings) => void;
+  onDepositClick: () => void;
 }
 
-export const SettingsCard: React.FC<SettingsCardProps> = ({ settings, onSettingsChange }) => {
+export const SettingsCard: React.FC<SettingsCardProps> = ({ settings, onSettingsChange, onDepositClick }) => {
   const [capital, setCapital] = useState(settings.capital.toString());
   const [riskPercent, setRiskPercent] = useState(settings.riskPercent.toString());
 
@@ -33,30 +35,39 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({ settings, onSettings
         <h2 className="text-lg font-semibold text-white">Auto-Pilot Settings</h2>
       </div>
       <div className="p-4 space-y-4">
-        <div>
-          <label htmlFor="capital" className="block text-sm font-medium text-gray-300 mb-1">Total Capital ($)</label>
-          <input
-            type="number"
-            id="capital"
-            value={capital}
-            onChange={e => setCapital(e.target.value)}
-            onBlur={handleSave}
-            className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="e.g., 1000"
-          />
+        <div className="flex gap-2">
+            <div className="flex-grow">
+              <label htmlFor="capital" className="block text-sm font-medium text-gray-300 mb-1">Trade Size ($)</label>
+              <input
+                type="number"
+                id="capital"
+                value={capital}
+                onChange={e => setCapital(e.target.value)}
+                onBlur={handleSave}
+                className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="e.g., 100"
+              />
+            </div>
+             <div className="flex-grow">
+              <label htmlFor="risk" className="block text-sm font-medium text-gray-300 mb-1">per Trade (%)</label>
+              <input
+                type="number"
+                id="risk"
+                value={riskPercent}
+                onChange={e => setRiskPercent(e.target.value)}
+                onBlur={handleSave}
+                className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="e.g., 10"
+              />
+            </div>
         </div>
-        <div>
-          <label htmlFor="risk" className="block text-sm font-medium text-gray-300 mb-1">Investment per Trade (%)</label>
-          <input
-            type="number"
-            id="risk"
-            value={riskPercent}
-            onChange={e => setRiskPercent(e.target.value)}
-            onBlur={handleSave}
-            className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="e.g., 10"
-          />
-        </div>
+        <button
+            onClick={onDepositClick}
+            className="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors"
+        >
+            <PlusCircleIcon />
+            Deposit Funds
+        </button>
         <button
           onClick={toggleIsActive}
           className={`w-full font-bold py-3 px-4 rounded-md transition-all duration-300 text-lg flex items-center justify-center gap-2 ${
